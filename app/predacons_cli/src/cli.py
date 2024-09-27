@@ -60,7 +60,7 @@ class Cli:
             auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
 
         elif model_type == '3':
-            print("[yellow]Not supported yest adding soon...[/yellow]")
+            print("[yellow]Not supported yet, adding soon...[/yellow]")
         
         temperature = Prompt.ask("Enter the temperature", default="0.3")
         max_length = Prompt.ask("Enter the max length for each response", default="1000")
