@@ -32,12 +32,18 @@ class Cli:
                                          config["gguf_file"],
                                          config["auto_quantize"])
         
+        chat  = []
         while True:
             user_input = Prompt.ask("Enter your query")
+            user_body = {"role": "user", "content": user_input} 
+
+            chat.append(user_input)
             if user_input == "exit":
                 break
             else:
                 response = Cli.generate_response(self, user_input, model, tokenizer, config)
+                response_body = {"role": "assistant", "content": response}
+                chat.append(response_body)
                 print(response)
 
     
