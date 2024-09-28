@@ -1,7 +1,8 @@
 import predacons
 import os
-import rich
+from rich import print
 from rich.prompt import Prompt
+import json
 
 
 class Cli:
@@ -9,13 +10,23 @@ class Cli:
         self.predacons = predacons
 
     def launch(self):
+        """
+        Launch the Predacons CLI application.
+
+        This function sets up the argument parser, processes command-line arguments,
+        and invokes the appropriate CLI commands based on the provided arguments.
+        If no arguments are provided, it launches the default CLI interface.
+        """
         print("[i]Welcome to the Predacons CLI![/i]")
         # check if the predacon_cli_config.json file exists
-        if not Cli.check_config_file():
+        if not Cli.check_config_file(self):
             print("[yellow]No config file found. Creating one now...[/yellow]")
-            Cli.create_config_file()
+            config = Cli.create_config_file(self)
         else:
-            config = Cli.load_config_file()
+            config = Cli.load_config_file(self)
+        
+        # model,tokenizer = Cli.load_model(config.model_path,trust_remote_code,use_fast_generation,draft_model_name,gguf_file,auto_quantize)
+
     
     def load_model(self, model_path,trust_remote_code=False,use_fast_generation=False, draft_model_name=None,gguf_file=None,auto_quantize=None):
         model = self.predacons.load_model(model_path,trust_remote_code=trust_remote_code,use_fast_generation=use_fast_generation, draft_model_name=draft_model_name,gguf_file=gguf_file,auto_quantize=auto_quantize)
@@ -41,10 +52,13 @@ class Cli:
         print("[yellow]Please enter the following details to create a new configuration file[/yellow]")
         # first ask for thype of model: 1: normal local or hugging face safetensor or pytorch model OR 2: gguf model 3 : other type of model
         print("[yellow]Select the type of model:[/yellow]")
-        print("[yellow]1: Normal local or Hugging Face safetensor or PyTorch model[/yellow]")
-        print("[yellow]2: GGUF model[/yellow]")
-        print("[yellow]3: Other type of model[/yellow]")
+        print("[blue]1:[/blue] [yellow]Normal local or Hugging Face safetensor or PyTorch model[/yellow]")
+        print("[blue]2:[/blue] [yellow]GGUF model[/yellow]")
+        print("[blue]3:[/blue] [yellow]Other type of model[/yellow]")
         model_type = Prompt.ask("Enter the model type (1/2/3)", default="1")
+        draft_model_name = None
+        gguf_file = None
+        use_fast_generation = False
         if model_type == '1':
             model_path = Prompt.ask("Enter the model path or hugging face model name")
             trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default="false")
@@ -60,8 +74,16 @@ class Cli:
             auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
 
         elif model_type == '3':
-            print("[yellow]Not supported yest adding soon...[/yellow]")
-        
+            print("[yellow]Not supported yest adding soon... for now try default model[/yellow]")
+            model_path = Prompt.ask("Enter the model path or hugging face model name")
+            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default="false")
+            use_fast_generation = Prompt.ask("Use fast generation? (true/false)", default="false")
+            if use_fast_generation.lower() == 'true':
+                draft_model_name = Prompt.ask("Enter the draft model name (optional)", default="")
+            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
+        else :
+            print("[red]Invalid model type selected![/red]")
+            return
         temperature = Prompt.ask("Enter the temperature", default="0.3")
         max_length = Prompt.ask("Enter the max length for each response", default="1000")
         top_k = Prompt.ask("Enter the top k value", default="50")
@@ -87,7 +109,7 @@ class Cli:
         }
         
         with open(file_path, 'w') as f:
-            f.write(config_data)
+            json.dump(config_data, f, indent=4)
         
         print("[green]Configuration file created successfully![/green]")
         return config_data
@@ -97,5 +119,11 @@ class Cli:
         with open(file_path, 'r') as f:
             config = f.read()
         return config
-    
+
+cli = Cli()
+cli.launch()
+
+def main():
+    cli = Cli()
+    cli.launch()
         
