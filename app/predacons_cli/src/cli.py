@@ -74,7 +74,7 @@ class Cli:
             auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
 
         elif model_type == '3':
-            print("[yellow]Not supported yest adding soon... for now try default model[/yellow]")
+            print("[yellow]Not supported yet adding soon... for now try default model[/yellow]")
             model_path = Prompt.ask("Enter the model path or hugging face model name")
             trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default="false")
             use_fast_generation = Prompt.ask("Use fast generation? (true/false)", default="false")
@@ -84,6 +84,7 @@ class Cli:
         else :
             print("[red]Invalid model type selected![/red]")
             return
+        
         temperature = Prompt.ask("Enter the temperature", default="0.3")
         max_length = Prompt.ask("Enter the max length for each response", default="1000")
         top_k = Prompt.ask("Enter the top k value", default="50")
