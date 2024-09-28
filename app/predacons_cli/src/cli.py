@@ -19,13 +19,26 @@ class Cli:
         """
         print("[i]Welcome to the Predacons CLI![/i]")
         # check if the predacon_cli_config.json file exists
-        if not Cli.check_config_file(self):
+        config = Cli.check_config_file(self)
+        if not config:
             print("[yellow]No config file found. Creating one now...[/yellow]")
             config = Cli.create_config_file(self)
-        else:
-            config = Cli.load_config_file(self)
+        # print(config)
         
-        # model,tokenizer = Cli.load_model(config.model_path,trust_remote_code,use_fast_generation,draft_model_name,gguf_file,auto_quantize)
+        model,tokenizer = Cli.load_model(self,config["model_path"],
+                                         config["trust_remote_code"],
+                                         config["use_fast_generation"],
+                                         config["draft_model_name"],
+                                         config["gguf_file"],
+                                         config["auto_quantize"])
+        
+        while True:
+            user_input = Prompt.ask("Enter your query")
+            if user_input == "exit":
+                break
+            else:
+                response = Cli.generate_response(self, user_input, model, tokenizer, config)
+                print(response)
 
     
     def load_model(self, model_path,trust_remote_code=False,use_fast_generation=False, draft_model_name=None,gguf_file=None,auto_quantize=None):
@@ -41,7 +54,15 @@ class Cli:
         file_path = 'predacon_cli_config.json'
 
         if os.path.exists(file_path):
-            return True
+            # open the file and load config_data
+            with open(file_path, 'r') as file:
+                config_data = json.load(file)
+                # print(config_data)
+                # check if model_path is present
+                if 'model_path' not in config_data:
+                    return False
+            return config_data
+            
         else:
             return False
     
@@ -121,6 +142,9 @@ class Cli:
             config = f.read()
         return config
 
+    def generate_response(self, user_input, model, tokenizer, config):
+        response = self.predacons.generate_response(user_input, model, tokenizer, config)
+        return response
 cli = Cli()
 cli.launch()
 
