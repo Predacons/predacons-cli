@@ -43,15 +43,15 @@ Once the CLI is launched, you can use the following commands:
 
 ```sh
 $ python cli.py
-[i]Welcome to the Predacons CLI![/i]
-[yellow]No config file found. Creating one now...[/yellow]
-[green]Creating a new configuration file...[/green]
-[yellow]Please enter the following details to create a new configuration file[/yellow]
+Welcome to the Predacons CLI!
+No config file found. Creating one now...
+Creating a new configuration file...
+Please enter the following details to create a new configuration file
 ...
-[i]Welcome to the Predacons CLI![/i] [green]Model: [orange1]Precacons/Pico-Lamma-3.2-1B-Reasoning-Instruct[/orange1] loaded successfully![/green]
-[yellow]You can start chatting with Predacons now. Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]
-[green]User[/green]: Hello!
-[orange1]Predacons: [/orange1] [sky_blue1]Hi there! How can I assist you today?[/sky_blue1]
+Welcome to the Predacons CLI! Model: Precacons/Pico-Lamma-3.2-1B-Reasoning-Instruct loaded successfully!
+You can start chatting with Predacons now. Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,
+User: Hello!
+Predacons: Hi there! How can I assist you today?
 ```
 
 ## Configuration
