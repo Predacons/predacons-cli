@@ -3,6 +3,11 @@ import os
 from rich import print
 from rich.prompt import Prompt
 import json
+import logging
+import time
+
+
+logging.getLogger("transformers").setLevel(logging.ERROR)
 
 
 class Cli:
@@ -33,18 +38,31 @@ class Cli:
                                          config["auto_quantize"])
         
         chat  = []
+        print("[yellow]Model loaded Clearing logs in 3 sec to keep the logs start predacons with --logs [/yellow]")
+        for i in range(3, 0, -1):
+            print(i)
+            time.sleep(1)
+            
+        os.system('clear')  # Clear the screen
+        print("[i]Welcome to the Predacons CLI![/i] [green]Model: [orange1]"+config["model_path"]+"[/orange1] loaded successfully![/green]")
+        print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
         while True:
-            user_input = Prompt.ask("Enter your query")
+            user_input = Prompt.ask("[green]User[/green]")
             user_body = {"role": "user", "content": user_input} 
 
-            chat.append(user_input)
+            chat.append(user_body)
             if user_input == "exit":
                 break
+            elif user_input == "clear":
+                chat = []
+                print("[yellow]Chat history cleared![/yellow]")
+            elif user_input == "help":
+                print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
             else:
-                response = Cli.generate_response(self, user_input, model, tokenizer, config)
+                response = Cli.generate_response(self, chat, model, tokenizer, config)
                 response_body = {"role": "assistant", "content": response}
                 chat.append(response_body)
-                print(response)
+                print("[orange1]Predacons: [/orange1] [blue]" + response+"[/blue]")
 
     
     def load_model(self, model_path,trust_remote_code=False,use_fast_generation=False, draft_model_name=None,gguf_file=None,auto_quantize=None):
@@ -148,8 +166,16 @@ class Cli:
             config = f.read()
         return config
 
-    def generate_response(self, user_input, model, tokenizer, config):
-        response = self.predacons.generate_response(user_input, model, tokenizer, config)
+    def generate_response(self, chat, model, tokenizer, config):
+        response = self.predacons.chat_generate(model = model,
+            sequence = chat,
+            max_length = config["max_length"],
+            tokenizer = tokenizer,
+            trust_remote_code = config["trust_remote_code"],
+            do_sample=True,   
+            temperature = config["temperature"],
+            dont_print_output = True,
+            )
         return response
 cli = Cli()
 cli.launch()
