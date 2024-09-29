@@ -6,7 +6,11 @@ import json
 import logging
 import time
 from rich.table import Table
+from rich.markdown import Markdown
+from rich.console import Console
 
+
+console = Console()
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
 
@@ -14,6 +18,13 @@ logging.getLogger("transformers").setLevel(logging.ERROR)
 class Cli:
     def __init__(self):
         self.predacons = predacons
+        self.config_file_path = os.path.join(os.path.expanduser("~"), ".predacons_cli", "predacon_cli_config.json")
+        self.ensure_config_directory_exists()
+
+    def ensure_config_directory_exists(self):
+        config_dir = os.path.dirname(self.config_file_path)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
 
     def launch(self,logs=False):
         """
@@ -40,8 +51,8 @@ class Cli:
         
         chat  = []
         if logs == False:
-            print("[yellow]Model loaded poperly Clearing logs in 3 sec to keep the logs start predacons with --logs [/yellow]")
-            for i in range(3, 0, -1):
+            print("[yellow]Model loaded poperly Clearing logs in 1 sec to keep the logs start predacons with --logs [/yellow]")
+            for i in range(1, 0, -1):
                 time.sleep(1)
             os.system('clear')  # Clear the screen
         
@@ -53,17 +64,28 @@ class Cli:
 
             chat.append(user_body)
             if user_input == "exit":
-                break
+                return
             elif user_input == "clear":
                 chat = []
                 print("[yellow]Chat history cleared![/yellow]")
+            elif user_input == "clear-config":
+                Cli.clear_config(self)
+            elif user_input == "settings":
+                Cli.settings(self)
+            elif user_input == "version":
+                Cli.version(self)
             elif user_input == "help":
                 print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
             else:
                 response = Cli.generate_response(self, chat, model, tokenizer, config)
                 response_body = {"role": "assistant", "content": response}
                 chat.append(response_body)
-                print("[orange1]Predacons: [/orange1] [blue]" + response+"[/blue]")
+                if config["print_as_markdown"]:
+                    markdown = Markdown(response)
+                    print("[orange1]Predacons: [/orange1]")
+                    console.print(markdown)
+                else:
+                    console.print("[orange1]Predacons: [/orange1] [sky_blue1]" + response+"[/sky_blue1]")
 
     
     def load_model(self, model_path,trust_remote_code=False,use_fast_generation=False, draft_model_name=None,gguf_file=None,auto_quantize=None):
@@ -72,7 +94,7 @@ class Cli:
         return model, tokenizer
         
     def clear_config(self):
-        file_path = 'predacon_cli_config.json'
+        file_path = self.config_file_path
         if os.path.exists(file_path):
             os.remove(file_path)
             print("[green]Configuration file cleared successfully![/green]")
@@ -93,7 +115,7 @@ class Cli:
         print(table)
     
     def settings(self):
-        file_path = 'predacon_cli_config.json'
+        file_path = self.config_file_path
 
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
@@ -105,7 +127,7 @@ class Cli:
             self.print_config_data(config_data)
 
     def version(self):
-        print("[blue]Predacons CLI version 0.0.1[blue]")
+        print("[blue]Predacons CLI version 0.0.100[blue]")
     
     def help(self):
         print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
@@ -116,7 +138,7 @@ class Cli:
         print("[yellow]--logs: Prints all logs[/yellow]")
 
     def check_config_file(self):
-        file_path = 'predacon_cli_config.json'
+        file_path = self.config_file_path
 
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
@@ -130,7 +152,32 @@ class Cli:
             return False
     
     def create_config_file(self):
-        file_path = 'predacon_cli_config.json'
+        config = Cli.check_config_file(self)
+        file_path = self.config_file_path
+        default_config = {
+            "model_path": "Precacons/Pico-Lamma-3.2-1B-Reasoning-Instruct",
+            "trust_remote_code": False,
+            "use_fast_generation": False,
+            "draft_model_name": None,
+            "gguf_file": None,
+            "auto_quantize": False,
+            "temperature": 0.3,
+            "max_length": 1000,
+            "top_k": 50,
+            "top_p": 0.9,
+            "repetition_penalty": 1.0,
+            "num_return_sequences": 1,
+            "print_as_markdown": False
+        }
+
+        # If no config file is found, use the default configuration
+        if not config:
+            config = default_config
+        else:
+            # Ensure all default keys are present in the loaded config
+            for key, value in default_config.items():
+                if key not in config:
+                    config[key] = value
         print("[green]Creating a new configuration file...[/green]")
         
         print("[yellow]Please enter the following details to create a new configuration file[/yellow]")
@@ -144,37 +191,38 @@ class Cli:
         gguf_file = None
         use_fast_generation = False
         if model_type == '1':
-            model_path = Prompt.ask("Enter the model path or hugging face model name")
-            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default="false")
-            use_fast_generation = Prompt.ask("Use fast generation? (true/false)", default="false")
+            model_path = Prompt.ask("Enter the model path or hugging face model name",default= config["model_path"])
+            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default=str(config["trust_remote_code"]))
+            use_fast_generation = Prompt.ask("Use fast generation? (true/false)", default=str(config["use_fast_generation"]))
             if use_fast_generation.lower() == 'true':
-                draft_model_name = Prompt.ask("Enter the draft model name (optional)", default="")
-            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
+                draft_model_name = Prompt.ask("Enter the draft model name (optional)", default=config["draft_model_name"])
+            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default=str(config["auto_quantize"]))
         
         elif model_type == '2':
             model_path = Prompt.ask("Enter the model path or hugging face model name")
-            gguf_file = Prompt.ask("Enter the GGUF file path/name", default="")
-            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default="false")
-            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
+            gguf_file = Prompt.ask("Enter the GGUF file path/name", default=config["gguf_file"])
+            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default=str(config["trust_remote_code"]))
+            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default=str(config["auto_quantize"]))
 
         elif model_type == '3':
             print("[yellow]Not supported yet adding soon... for now try default model[/yellow]")
             model_path = Prompt.ask("Enter the model path or hugging face model name")
-            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default="false")
-            use_fast_generation = Prompt.ask("Use fast generation? (true/false)", default="false")
+            trust_remote_code = Prompt.ask("Trust remote code? (true/false)", default=str(config["trust_remote_code"]))
+            use_fast_generation = Prompt.ask("Use fast generation? (true/false)", default=str(config["use_fast_generation"]))
             if use_fast_generation.lower() == 'true':
-                draft_model_name = Prompt.ask("Enter the draft model name (optional)", default="")
-            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default="false")
+                draft_model_name = Prompt.ask("Enter the draft model name (optional)", default=config["draft_model_name"])
+            auto_quantize = Prompt.ask("Enable auto quantize? (true/false)", default=str(config["auto_quantize"]))
         else :
             print("[red]Invalid model type selected![/red]")
             return
         
-        temperature = Prompt.ask("Enter the temperature", default="0.3")
-        max_length = Prompt.ask("Enter the max length for each response", default="1000")
-        top_k = Prompt.ask("Enter the top k value", default="50")
-        top_p = Prompt.ask("Enter the top p value", default="0.9")
-        repetition_penalty = Prompt.ask("Enter the repetition penalty value", default="1.0")
-        num_return_sequences = Prompt.ask("Enter the number of return sequences", default="1")
+        temperature = Prompt.ask("Enter the temperature", default=str(config["temperature"]))
+        max_length = Prompt.ask("Enter the max length for each response", default=str(config["max_length"]))
+        top_k = Prompt.ask("Enter the top k value", default=str(config["top_k"]))
+        top_p = Prompt.ask("Enter the top p value", default=str(config["top_p"]))
+        repetition_penalty = Prompt.ask("Enter the repetition penalty value", default=str(config["repetition_penalty"]))
+        num_return_sequences = Prompt.ask("Enter the number of return sequences", default=str(config["num_return_sequences"]))
+        print_as_markdown = Prompt.ask("Print response as markdown? this looks cool but may not print propelry (true/false)", default=str(config["print_as_markdown"]))
 
 
 
@@ -190,7 +238,8 @@ class Cli:
             "top_k": int(top_k),
             "top_p": float(top_p),
             "repetition_penalty": float(repetition_penalty),
-            "num_return_sequences": int(num_return_sequences)
+            "num_return_sequences": int(num_return_sequences),
+            "print_as_markdown": print_as_markdown.lower() == 'true'
         }
         
         with open(file_path, 'w') as f:
@@ -200,7 +249,7 @@ class Cli:
         return config_data
 
     def load_config_file(self):
-        file_path = 'predacon_cli_config.json'
+        file_path = self.config_file_path
         with open(file_path, 'r') as f:
             config = f.read()
         return config

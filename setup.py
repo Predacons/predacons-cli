@@ -14,7 +14,7 @@ setup(
     # scripts=['bin/predacons-gui'],
     entry_points ={ 
         'console_scripts': [ 
-            'predacons-gui = predacons_gui.src.predacons_gui:launch'
+            'predacons = predacons_cli.src.predacons_cli:launch'
         ]
     },
     long_description=long_description,
