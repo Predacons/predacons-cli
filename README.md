@@ -15,7 +15,7 @@ Welcome to the **Predacons CLI**! This command-line interface (CLI) allows you t
 To install the Predacons CLI, you need to have Python installed on your system. You can install the required dependencies using `pip`:
 
 ```sh
-pip install -r requirements.txt
+pip install predacons-cli
 ```
 
 ## Usage
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 To start the Predacons CLI, simply run:
 
 ```sh
-python cli.py
+predacons
 ```
 
 ### Commands
