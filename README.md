@@ -42,7 +42,7 @@ Once the CLI is launched, you can use the following commands:
 ### Example Session
 
 ```sh
-$ python cli.py
+$ predacons
 Welcome to the Predacons CLI!
 No config file found. Creating one now...
 Creating a new configuration file...
