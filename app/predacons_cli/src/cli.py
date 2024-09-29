@@ -5,6 +5,7 @@ from rich.prompt import Prompt
 import json
 import logging
 import time
+from rich.table import Table
 
 
 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -14,7 +15,7 @@ class Cli:
     def __init__(self):
         self.predacons = predacons
 
-    def launch(self):
+    def launch(self,logs=False):
         """
         Launch the Predacons CLI application.
 
@@ -38,12 +39,12 @@ class Cli:
                                          config["auto_quantize"])
         
         chat  = []
-        print("[yellow]Model loaded Clearing logs in 3 sec to keep the logs start predacons with --logs [/yellow]")
-        for i in range(3, 0, -1):
-            print(i)
-            time.sleep(1)
-            
-        os.system('clear')  # Clear the screen
+        if logs == False:
+            print("[yellow]Model loaded poperly Clearing logs in 3 sec to keep the logs start predacons with --logs [/yellow]")
+            for i in range(3, 0, -1):
+                time.sleep(1)
+            os.system('clear')  # Clear the screen
+        
         print("[i]Welcome to the Predacons CLI![/i] [green]Model: [orange1]"+config["model_path"]+"[/orange1] loaded successfully![/green]")
         print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
         while True:
@@ -70,19 +71,57 @@ class Cli:
         tokenizer = self.predacons.load_tokenizer(model_path,gguf_file=gguf_file)
         return model, tokenizer
         
+    def clear_config(self):
+        file_path = 'predacon_cli_config.json'
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print("[green]Configuration file cleared successfully![/green]")
+        else:
+            print("[red]Configuration file not found![/red]")
+    
+    def print_config_data(self, config_data):
+        table = Table(title="Config Data", row_styles=["none", "dim"])
+
+        # Add columns for keys and values with padding
+        table.add_column("Key", justify="left", style="cyan", no_wrap=True)
+        table.add_column("Value", justify="left", style="magenta", no_wrap=True)
+
+        # Add rows for each key-value pair with padding
+        for key, value in config_data.items():
+            table.add_row(f"[bold cyan]{key}[/bold cyan]", f"[bold magenta]{value}[/bold magenta]")
+
+        print(table)
     
     def settings(self):
-        return self.predacons.settings()
+        file_path = 'predacon_cli_config.json'
+
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                config_data = json.load(file)
+        self.print_config_data(config_data)
+        update = Prompt.ask("Do you want to update settings?", choices=["y", "n"],default="n")
+        if update == "y":
+            config_data = Cli.create_config_file(self)
+            self.print_config_data(config_data)
+
+    def version(self):
+        print("[blue]Predacons CLI version 0.0.1[blue]")
     
+    def help(self):
+        print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
+        print("[yellow]--clear-config: Clear the current configuration[/yellow]")
+        print("[yellow]--settings: Show settings[/yellow]")
+        print("[yellow]--version: Show version[/yellow]")
+        print("[yellow]--help: Show help[/yellow]")
+        print("[yellow]--logs: Prints all logs[/yellow]")
+
     def check_config_file(self):
         file_path = 'predacon_cli_config.json'
 
         if os.path.exists(file_path):
-            # open the file and load config_data
             with open(file_path, 'r') as file:
                 config_data = json.load(file)
                 # print(config_data)
-                # check if model_path is present
                 if 'model_path' not in config_data:
                     return False
             return config_data
@@ -177,10 +216,8 @@ class Cli:
             dont_print_output = True,
             )
         return response
-cli = Cli()
-cli.launch()
+    
+# cli = Cli()
+# cli.launch()
 
-def main():
-    cli = Cli()
-    cli.launch()
-        
+
