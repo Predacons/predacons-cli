@@ -3,20 +3,24 @@ import argparse
 
 def launch():
     parser = argparse.ArgumentParser(description="Predacons CLI")
-    parser.add_argument('--load-model', type=str, help='Path to the model to load')
-    parser.add_argument('--list-models', action='store_true', help='List available models')
-    parser.add_argument('--clear-model', action='store_true', help='Clear the current model')
-    parser.add_argument('--settins', action='store_true', help='Show settings')
+    parser.add_argument('--clear-config', action='store_true', help='Clear the current configuration')
+    parser.add_argument('--settings', action='store_true', help='Show settings')
+    parser.add_argument('--version', action='store_true', help='Show version')
+    # parser.add_argument('--help', action='store_true', help='Show help')
+    parser.add_argument('--logs', action='store_true', help='Prints all logs')
     args = parser.parse_args()
 
     cli = Cli()
-    if args.load_model:
-        cli.load_model(args.load_model)
-    elif args.list_models:
-        cli.list_models()
-    elif args.clear_model:
-        cli.clear_model()
+    
+    if args.clear_config:
+        cli.clear_config()
     elif args.settings:
         cli.settings()
+    elif args.version:
+        cli.version()
+    # elif args.help:
+    #     cli.help()
+    elif args.logs:
+        cli.launch(logs =True)
     else:
         cli.launch()

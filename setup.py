@@ -14,7 +14,7 @@ setup(
     # scripts=['bin/predacons-gui'],
     entry_points ={ 
         'console_scripts': [ 
-            'predacons-gui = predacons_gui.src.predacons_gui:launch'
+            'predacons = predacons_cli.src.predacons_cli:launch'
         ]
     },
     long_description=long_description,
@@ -28,7 +28,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
     ],
-    install_requires=["predacons >= 0.0.124"]
+    install_requires=["predacons >= 0.0.125"]
 ,
     extras_require={
         "dev": ["pytest>=7.0", "twine>=4.0.2"],
