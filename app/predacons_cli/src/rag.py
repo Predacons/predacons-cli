@@ -55,8 +55,8 @@ class VectorStore:
         current_chunk_index = 0
 
         for chunk in chunks:
-            source = chunk.metadata.get("source")
-            page = chunk.metadata.get("page")
+            source = chunk.metadata.get("source", "unknown_source") 
+            page = chunk.metadata.get("page", "unknown_page")
             current_page_id = f"{source}:{page}"
 
             if current_page_id == last_page_id:
