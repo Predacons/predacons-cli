@@ -8,6 +8,8 @@ import time
 from rich.table import Table
 from rich.markdown import Markdown
 from rich.console import Console
+from rag import VectorStore
+from rag import WebScraper
 
 
 console = Console()
@@ -20,6 +22,16 @@ class Cli:
         self.predacons = predacons
         self.config_file_path = os.path.join(os.path.expanduser("~"), ".predacons_cli", "predacon_cli_config.json")
         self.ensure_config_directory_exists()
+        # try:
+        #     os.environ['CUDA_VISIBLE_DEVICES'] ='0'
+        #     import torch
+        #     if torch.cuda.is_available():
+        #         torch.set_default_device('cuda')
+        #         print("Using GPU")
+        #     else:
+        #         print("No GPU available")
+        # except:
+        #     print("No GPU available")
 
     def ensure_config_directory_exists(self):
         config_dir = os.path.dirname(self.config_file_path)
@@ -50,6 +62,31 @@ class Cli:
                                          config["auto_quantize"])
         
         chat  = []
+        vector_db = None
+        print("[yellow]Checking for data sources for the chat[/yellow]")
+        if config.get("scrap_web", False):
+            print("[yellow]Web scraping enabled iitializing web scraper[/yellow]")
+            try:
+                web_scraper = WebScraper()
+                print("[green]Web scraper initialized![/green]")
+            except:
+                print("[red]Web scraper initialization failed![/red]")
+                print("[yellow]Continueing with simple chat[/yellow]")
+        
+        if config.get("chat_with_data", False):
+            print("[yellow]Chat with data enabled looking for vector db[/yellow]")
+            if not os.path.exists(config.get("vector_db_path", False)):
+                print("[red]Vector DB not found![/red]")
+                print("[yellow]Continueing with simple chat[/yellow]")
+            else:
+                print("[green]Vector DB found![/green]")
+                print("[yellow]Loading data from vector DB[/yellow]")
+                # load data from vector db
+
+                vector_store = VectorStore(config["vector_db_path"], config["document_path"], config.get("embedding_model", None))
+                vector_db = vector_store.load_db()
+                print("[yellow]Data loaded successfully![/yellow]")
+            
         if logs == False:
             print("[yellow]Model loaded poperly Clearing logs in 1 sec to keep the logs start predacons with --logs [/yellow]")
             for i in range(1, 0, -1):
@@ -57,12 +94,10 @@ class Cli:
             os.system('clear')  # Clear the screen
         
         print("[i]Welcome to the Predacons CLI![/i] [green]Model: [orange1]"+config["model_path"]+"[/orange1] loaded successfully![/green]")
-        print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
+        print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options, Type 'update' to update the load documents[/yellow]")
         while True:
             user_input = Prompt.ask("[green]User[/green]")
-            user_body = {"role": "user", "content": user_input} 
-
-            chat.append(user_body)
+            
             if user_input == "exit":
                 return
             elif user_input == "clear":
@@ -75,8 +110,63 @@ class Cli:
             elif user_input == "version":
                 Cli.version(self)
             elif user_input == "help":
-                print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
+                print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options, Type 'update' to update the load documents[/yellow]")
+            elif user_input == "update":
+                print("[yellow]Updating documents...[/yellow]")
+                # check and update the vector store
+                vector_store.load_and_update_db()
+                print("[yellow]Documents updated successfully![/yellow]")
             else:
+                if config.get("chat_with_data", False) and vector_db:
+                    # get response from vector store
+                    context_text,similarity_score = vector_store.get_similar(user_input, db=vector_db, top_n=5, similarity_threshold=0.1)
+                    # extract page_details from response
+                    if config.get("scrap_web", False) and similarity_score < 0.5:
+                        web_text = web_scraper.get_web_data(user_input,3)
+                        PROMPT_TEMPLATE = """
+                        Answer the question based only on the following context:
+
+                        {db_context}
+
+                        
+                        Here are additianl infor from web search this context is google search results and web scraped data on the same topic :
+
+                        {web_context}
+
+                        ---
+
+                        Answer the question based on the above context: {question}
+                        """
+
+                        user_input = PROMPT_TEMPLATE.format(db_context=context_text,web_context=web_text, question=user_input)
+                    
+                    PROMPT_TEMPLATE = """
+                    Answer the question based only on the following context:
+
+                    {context}
+
+                    ---
+
+                    Answer the question based on the above context: {question}
+                    """
+
+                    user_input = PROMPT_TEMPLATE.format(context=context_text, question=user_input)
+                elif config.get("scrap_web", False) :
+                    # scrap the web and
+                    web_text = web_scraper.get_web_data(user_input,3)
+                    PROMPT_TEMPLATE = """
+                    Answer the question based only on the following context this context is google search results and web scraped data:
+
+                    {context}
+
+                    ---
+
+                    Answer the question based on the above context: {question}
+                    """
+
+                    user_input = PROMPT_TEMPLATE.format(context=context_text, question=user_input)
+                user_body = {"role": "user", "content": user_input} 
+                chat.append(user_body)
                 response = Cli.generate_response(self, chat, model, tokenizer, config)
                 response_body = {"role": "assistant", "content": response}
                 chat.append(response_body)
@@ -127,7 +217,8 @@ class Cli:
             self.print_config_data(config_data)
 
     def version(self):
-        print("[blue]Predacons CLI version 0.0.100[blue]")
+        print("[blue]Predacons CLI version 0.0.101[blue]")
+        print("[blue]Predacons version 0.0.126[blue]")
     
     def help(self):
         print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
@@ -167,7 +258,12 @@ class Cli:
             "top_p": 0.9,
             "repetition_penalty": 1.0,
             "num_return_sequences": 1,
-            "print_as_markdown": False
+            "print_as_markdown": False,
+            "chat_with_data": False,
+            "vector_db_path": None,
+            "document_path": None,
+            "embedding_model" : None,
+            "scrap_web": False
         }
 
         # If no config file is found, use the default configuration
@@ -223,7 +319,11 @@ class Cli:
         repetition_penalty = Prompt.ask("Enter the repetition penalty value", default=str(config["repetition_penalty"]))
         num_return_sequences = Prompt.ask("Enter the number of return sequences", default=str(config["num_return_sequences"]))
         print_as_markdown = Prompt.ask("Print response as markdown? this looks cool but may not print propelry (true/false)", default=str(config["print_as_markdown"]))
-
+        vector_db = Prompt.ask("Chat with data? (true/false)", default=str(config["chat_with_data"]))
+        vector_db_path = Prompt.ask("Enter the vector DB path", default=config["vector_db_path"])
+        document_path = Prompt.ask("Enter the document path", default=config["document_path"])
+        embedding_model = Prompt.ask("Enter the embedding model", default=config["embedding_model"])
+        scrap_web = Prompt.ask("Scrap the web for data? (true/false)", default=str(config["scrap_web"]))
 
 
         config_data = {
@@ -239,7 +339,12 @@ class Cli:
             "top_p": float(top_p),
             "repetition_penalty": float(repetition_penalty),
             "num_return_sequences": int(num_return_sequences),
-            "print_as_markdown": print_as_markdown.lower() == 'true'
+            "print_as_markdown": print_as_markdown.lower() == 'true',
+            "chat_with_data": vector_db.lower() == 'true',
+            "vector_db_path": vector_db_path if vector_db_path else None,
+            "document_path": document_path if document_path else None,
+            "embedding_model": embedding_model if embedding_model else None,
+            "scrap_web": scrap_web.lower() == 'true'
         }
         
         with open(file_path, 'w') as f:

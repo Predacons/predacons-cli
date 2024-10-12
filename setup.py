@@ -7,7 +7,7 @@ HERE = pathlib.Path(__file__).parent
 
 setup(
     name="predacons_cli",
-    version="0.0.100",
+    version="0.0.101",
     description="comand line interface for Predacons",
     package_dir={"": "app"},
     packages=find_packages(where="app"),
@@ -28,8 +28,16 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Operating System :: OS Independent",
     ],
-    install_requires=["predacons >= 0.0.125"]
-,
+    install_requires=[
+    "predacons >= 0.0.126",
+    "rich >= 13.7.1",
+    "langchain_community >= 0.3.2",
+    "langchain >= 0.3.3",
+    "requests >= 2.32.3",
+    "beautifulsoup4 >= 4.12.3",
+    "googlesearch-python >= 1.2.5"
+    ],
+
     extras_require={
         "dev": ["pytest>=7.0", "twine>=4.0.2"],
     },
