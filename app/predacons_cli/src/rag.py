@@ -93,7 +93,6 @@ class VectorStore:
         documents = self.load_documents()
         chunks = self.split_text(documents)
         self.add_to_chroma(chunks)
-        print("✅ Done")
     
     def load_db(self):
         db = Chroma(persist_directory=self.chroma_path, embedding_function=self.embedder)

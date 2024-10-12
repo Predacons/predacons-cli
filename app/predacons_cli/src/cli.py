@@ -8,6 +8,7 @@ import time
 from rich.table import Table
 from rich.markdown import Markdown
 from rich.console import Console
+from rag import VectorStore
 
 
 console = Console()
@@ -50,6 +51,22 @@ class Cli:
                                          config["auto_quantize"])
         
         chat  = []
+        print("[yellow]Checking for data sources for the chat[/yellow]")
+        if config["chat_with_data"]:
+            print("[yellow]Chat with data enabled looking for vector db[/yellow]")
+            if not os.path.exists(config["vector_db_path"]):
+                print("[red]Vector DB not found![/red]")
+                print("[yellow]Continueing with simple chat[/yellow]")
+            else:
+                print("[green]Vector DB found![/green]")
+                print("[yellow]Loading data from vector DB[/yellow]")
+                # load data from vector db
+
+                vector_store = VectorStore(config["vector_db_path"], config["document_path"], config["embedding_model"])
+                # check and update the vector store
+                vector_store.load_and_update_db()
+                print("[yellow]Data loaded successfully![/yellow]")
+            
         if logs == False:
             print("[yellow]Model loaded poperly Clearing logs in 1 sec to keep the logs start predacons with --logs [/yellow]")
             for i in range(1, 0, -1):
@@ -77,6 +94,12 @@ class Cli:
             elif user_input == "help":
                 print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
             else:
+                if config["chat_with_data"]:
+                    # get response from vector store
+                    response = vector_store.get_response(user_input)
+                    response_body = {"role": "assistant", "content": response}
+                    chat.append(response_body)
+                    print("[orange1]Predacons: [/orange1] [sky_blue1]" + response+"[/sky_blue1]")
                 response = Cli.generate_response(self, chat, model, tokenizer, config)
                 response_body = {"role": "assistant", "content": response}
                 chat.append(response_body)
