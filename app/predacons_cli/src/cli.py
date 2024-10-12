@@ -74,8 +74,6 @@ class Cli:
                 # load data from vector db
 
                 vector_store = VectorStore(config["vector_db_path"], config["document_path"], config.get("embedding_model", None))
-                # check and update the vector store
-                vector_store.load_and_update_db()
                 vector_db = vector_store.load_db()
                 print("[yellow]Data loaded successfully![/yellow]")
             
@@ -86,7 +84,7 @@ class Cli:
             os.system('clear')  # Clear the screen
         
         print("[i]Welcome to the Predacons CLI![/i] [green]Model: [orange1]"+config["model_path"]+"[/orange1] loaded successfully![/green]")
-        print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
+        print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options, Type 'update' to update the load documents[/yellow]")
         while True:
             user_input = Prompt.ask("[green]User[/green]")
             
@@ -102,11 +100,17 @@ class Cli:
             elif user_input == "version":
                 Cli.version(self)
             elif user_input == "help":
-                print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
+                print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options, Type 'update' to update the load documents[/yellow]")
+            elif user_input == "update":
+                print("[yellow]Updating documents...[/yellow]")
+                # check and update the vector store
+                vector_store.load_and_update_db()
+                print("[yellow]Documents updated successfully![/yellow]")
             else:
                 if config.get("chat_with_data", False) and vector_db:
                     # get response from vector store
-                    response = vector_store.get_similar(user_input, db=vector_db, top_n=5, similarity_threshold=0.1)
+                    context_text = vector_store.get_similar(user_input, db=vector_db, top_n=5, similarity_threshold=0.1)
+                    # extract page_details from response
                     PROMPT_TEMPLATE = """
                     Answer the question based only on the following context:
 
@@ -116,7 +120,7 @@ class Cli:
 
                     Answer the question based on the above context: {question}
                     """
-                    user_input = PROMPT_TEMPLATE.format(context=response, question=user_input)
+                    user_input = PROMPT_TEMPLATE.format(context=context_text, question=user_input)
                     
                 user_body = {"role": "user", "content": user_input} 
                 chat.append(user_body)

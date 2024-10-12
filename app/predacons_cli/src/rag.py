@@ -34,17 +34,13 @@ class VectorStore:
         :return: List of chunks.
         """
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=300,
+            chunk_size=500,
             chunk_overlap=100,
             length_function=len,
             add_start_index=True,
         )
         chunks = text_splitter.split_documents(documents)
         print(f"Split {len(documents)} documents into {len(chunks)} chunks.")
-
-        document = chunks[10]
-        print(document.page_content)
-        print(document.metadata)
 
         return chunks
 
@@ -145,7 +141,9 @@ class VectorStore:
         results = db.similarity_search_with_relevance_scores(query, k=top_n)
         if len(results) == 0 or results[0][1] < similarity_threshold:
             print(f"Unable to find matching results.")
-        return results
+        
+        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+        return context_text
     
 class WebScraper:
     """
