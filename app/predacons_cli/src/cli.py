@@ -371,7 +371,7 @@ class Cli:
             )
         return response
     
-cli = Cli()
-cli.launch()
+# cli = Cli()
+# cli.launch()
 
 
