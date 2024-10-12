@@ -88,3 +88,21 @@ class VectorStore:
         loader = DirectoryLoader(self.document_path)
         documents = loader.load()
         return documents
+    
+    def load_and_update_db(self):
+        documents = self.load_documents()
+        chunks = self.split_text(documents)
+        self.add_to_chroma(chunks)
+        print("✅ Done")
+    
+    def load_db(self):
+        db = Chroma(persist_directory=self.chroma_path, embedding_function=self.embedder)
+        return db
+    
+    def get_similar(self, query,db =None, top_n = 5,similarity_threshold = 0.1):
+        if db is None:
+            db = self.load_db()
+        results = db.similarity_search_with_relevance_scores(query, k=top_n)
+        if len(results) == 0 or results[0][1] < similarity_threshold:
+            print(f"Unable to find matching results.")
+        return results
