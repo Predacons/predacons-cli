@@ -5,7 +5,7 @@ from langchain_community.vectorstores import Chroma
 from predacons import PredaconsEmbedding
 import requests
 from bs4 import BeautifulSoup
-# from googlesearch import search
+from googlesearch import search
 
 class VectorStore:
     """
@@ -143,7 +143,7 @@ class VectorStore:
             print(f"Unable to find matching results.")
         
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-        return context_text
+        return context_text,results[0][1]
     
 class WebScraper:
     """
@@ -153,22 +153,48 @@ class WebScraper:
     def __init__(self):
         pass
 
-    def fetch_html(self, url):
-        """
-        Fetch HTML content from a given URL.
+    def google_search_extract(self,query, num_results=5):
+        results = []
+        try:
+            # Perform Google search
+            search_results =  search(term = query, num_results=10, advanced = True)
+            i =0
+            for search_result in search_results:
+                url = search_result.url
+                title = search_result.title
+                description = search_result.description
+                results.append(title +"  "+ description)
+                if i == num_results:
+                    break
+                try:
+                    # Fetch the content of the URL
+                    response = requests.get(url)
+                    response.raise_for_status()
 
-        :param url: URL to fetch HTML content from.
-        :return: HTML content as a string.
-        """
-        pass
+                    # Parse the content using BeautifulSoup
+                    soup = BeautifulSoup(response.text, 'html.parser')
 
-    def parse_html(self, html_content):
-        """
-        Parse HTML content and extract relevant text.
+                    # Extract text from the website
+                    text = ' '.join([p.get_text() for p in soup.find_all('p')])
 
-        :param html_content: HTML content to parse.
-        :return: Extracted text as a string.
-        """
-        pass
+                    # Append the extracted text to results
+                    results.append(text)
+                    i = i+1
+                    print(url)
+                except requests.RequestException as e:
+                    # print(f"Failed to fetch {url}: {e}")
+                    pass
+                except Exception as e:
+                    # print(f"Failed to parse {url}: {e}")
+                    pass
+        except Exception as e:
+            print(f"Failed to perform Google search: {e}")
+
+        return results
+
+    def get_web_data(self, query,num_results = 5):
+        extracted_texts = self.google_search_extract(query, num_results)
+        extracted_texts_string = "\n\n---\n\n".join(extracted_texts)
+        return extracted_texts_string
 
     

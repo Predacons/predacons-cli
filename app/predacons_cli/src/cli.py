@@ -9,6 +9,7 @@ from rich.table import Table
 from rich.markdown import Markdown
 from rich.console import Console
 from rag import VectorStore
+from rag import WebScraper
 
 
 console = Console()
@@ -63,6 +64,15 @@ class Cli:
         chat  = []
         vector_db = None
         print("[yellow]Checking for data sources for the chat[/yellow]")
+        if config.get("scrap_web", False):
+            print("[yellow]Web scraping enabled iitializing web scraper[/yellow]")
+            try:
+                web_scraper = WebScraper()
+                print("[green]Web scraper initialized![/green]")
+            except:
+                print("[red]Web scraper initialization failed![/red]")
+                print("[yellow]Continueing with simple chat[/yellow]")
+        
         if config.get("chat_with_data", False):
             print("[yellow]Chat with data enabled looking for vector db[/yellow]")
             if not os.path.exists(config.get("vector_db_path", False)):
@@ -109,8 +119,27 @@ class Cli:
             else:
                 if config.get("chat_with_data", False) and vector_db:
                     # get response from vector store
-                    context_text = vector_store.get_similar(user_input, db=vector_db, top_n=5, similarity_threshold=0.1)
+                    context_text,similarity_score = vector_store.get_similar(user_input, db=vector_db, top_n=5, similarity_threshold=0.1)
                     # extract page_details from response
+                    if config.get("scrap_web", False) and similarity_score < 0.5:
+                        web_text = web_scraper.get_web_data(user_input,3)
+                        PROMPT_TEMPLATE = """
+                        Answer the question based only on the following context:
+
+                        {db_context}
+
+                        
+                        Here are additianl infor from web search this context is google search results and web scraped data on the same topic :
+
+                        {web_context}
+
+                        ---
+
+                        Answer the question based on the above context: {question}
+                        """
+
+                        user_input = PROMPT_TEMPLATE.format(db_context=context_text,web_context=web_text, question=user_input)
+                    
                     PROMPT_TEMPLATE = """
                     Answer the question based only on the following context:
 
@@ -120,8 +149,22 @@ class Cli:
 
                     Answer the question based on the above context: {question}
                     """
+
                     user_input = PROMPT_TEMPLATE.format(context=context_text, question=user_input)
-                    
+                elif config.get("scrap_web", False) :
+                    # scrap the web and
+                    web_text = web_scraper.get_web_data(user_input,3)
+                    PROMPT_TEMPLATE = """
+                    Answer the question based only on the following context this context is google search results and web scraped data:
+
+                    {context}
+
+                    ---
+
+                    Answer the question based on the above context: {question}
+                    """
+
+                    user_input = PROMPT_TEMPLATE.format(context=context_text, question=user_input)
                 user_body = {"role": "user", "content": user_input} 
                 chat.append(user_body)
                 response = Cli.generate_response(self, chat, model, tokenizer, config)
@@ -174,7 +217,8 @@ class Cli:
             self.print_config_data(config_data)
 
     def version(self):
-        print("[blue]Predacons CLI version 0.0.100[blue]")
+        print("[blue]Predacons CLI version 0.0.101[blue]")
+        print("[blue]Predacons version 0.0.126[blue]")
     
     def help(self):
         print("[yellow]Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options,[/yellow]")
@@ -218,7 +262,8 @@ class Cli:
             "chat_with_data": False,
             "vector_db_path": None,
             "document_path": None,
-            "embedding_model" : None
+            "embedding_model" : None,
+            "scrap_web": False
         }
 
         # If no config file is found, use the default configuration
@@ -278,6 +323,7 @@ class Cli:
         vector_db_path = Prompt.ask("Enter the vector DB path", default=config["vector_db_path"])
         document_path = Prompt.ask("Enter the document path", default=config["document_path"])
         embedding_model = Prompt.ask("Enter the embedding model", default=config["embedding_model"])
+        scrap_web = Prompt.ask("Scrap the web for data? (true/false)", default=str(config["scrap_web"]))
 
 
         config_data = {
@@ -297,7 +343,8 @@ class Cli:
             "chat_with_data": vector_db.lower() == 'true',
             "vector_db_path": vector_db_path if vector_db_path else None,
             "document_path": document_path if document_path else None,
-            "embedding_model": embedding_model if embedding_model else None
+            "embedding_model": embedding_model if embedding_model else None,
+            "scrap_web": scrap_web.lower() == 'true'
         }
         
         with open(file_path, 'w') as f:
