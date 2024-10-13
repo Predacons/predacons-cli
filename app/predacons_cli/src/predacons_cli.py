@@ -1,4 +1,5 @@
 from .cli import Cli
+from .rag import VectorStore, WebScraper
 import argparse
 
 def launch():
