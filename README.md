@@ -6,6 +6,8 @@ Welcome to the **Predacons CLI**! This command-line interface (CLI) allows you t
 
 - **Model Management**: Load and manage different types of models including local, Hugging Face safetensor, PyTorch, and GGUF models.
 - **Interactive Chat**: Engage in interactive chat sessions with the loaded model.
+- **Vector store**: Supports vector store allowing user to have conversation with any document or any unstructured data source
+- **Web Scraper**: It can makes google search and answer based on the search results
 - **Configuration Management**: Easily create, update, and clear configuration files.
 - **Rich Output**: Utilize rich text formatting for better readability and user experience.
 - **Logging**: Optionally enable logging for debugging and tracking purposes.
@@ -38,6 +40,7 @@ Once the CLI is launched, you can use the following commands:
 - [`settings`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fhome%2Fshourya%2Fcode_wsl%2FGitHub%2FPredacons-git%2Fpredacons-cli%2Fapp%2Fpredacons_cli%2Fsrc%2Fcli.py%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A73%2C%22character%22%3A20%7D%7D%5D%2C%22a3ad2ba0-b6df-4b55-96bb-4cbb30225959%22%5D "Go to definition"): Show and update settings.
 - [`version`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fhome%2Fshourya%2Fcode_wsl%2FGitHub%2FPredacons-git%2Fpredacons-cli%2Fapp%2Fpredacons_cli%2Fsrc%2Fcli.py%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A75%2C%22character%22%3A20%7D%7D%5D%2C%22a3ad2ba0-b6df-4b55-96bb-4cbb30225959%22%5D "Go to definition"): Display the current version of the Predacons CLI.
 - [`help`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fhome%2Fshourya%2Fcode_wsl%2FGitHub%2FPredacons-git%2Fpredacons-cli%2Fapp%2Fpredacons_cli%2Fsrc%2Fcli.py%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A131%2C%22character%22%3A8%7D%7D%5D%2C%22a3ad2ba0-b6df-4b55-96bb-4cbb30225959%22%5D "Go to definition"): Show help information.
+- `update`: updates the documents to the vector db
 
 ### Example Session
 
@@ -73,7 +76,11 @@ The configuration file is stored at `~/.predacons_cli/predacon_cli_config.json`.
 - [`repetition_penalty`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fhome%2Fshourya%2Fcode_wsl%2FGitHub%2FPredacons-git%2Fpredacons-cli%2Fapp%2Fpredacons_cli%2Fsrc%2Fcli.py%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A222%2C%22character%22%3A8%7D%7D%5D%2C%22a3ad2ba0-b6df-4b55-96bb-4cbb30225959%22%5D "Go to definition"): Repetition penalty value.
 - [`num_return_sequences`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fhome%2Fshourya%2Fcode_wsl%2FGitHub%2FPredacons-git%2Fpredacons-cli%2Fapp%2Fpredacons_cli%2Fsrc%2Fcli.py%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A223%2C%22character%22%3A8%7D%7D%5D%2C%22a3ad2ba0-b6df-4b55-96bb-4cbb30225959%22%5D "Go to definition"): Number of return sequences.
 - [`print_as_markdown`](command:_github.copilot.openSymbolFromReferences?%5B%22%22%2C%5B%7B%22uri%22%3A%7B%22scheme%22%3A%22file%22%2C%22authority%22%3A%22%22%2C%22path%22%3A%22%2Fhome%2Fshourya%2Fcode_wsl%2FGitHub%2FPredacons-git%2Fpredacons-cli%2Fapp%2Fpredacons_cli%2Fsrc%2Fcli.py%22%2C%22query%22%3A%22%22%2C%22fragment%22%3A%22%22%7D%2C%22pos%22%3A%7B%22line%22%3A224%2C%22character%22%3A8%7D%7D%5D%2C%22a3ad2ba0-b6df-4b55-96bb-4cbb30225959%22%5D "Go to definition"): Boolean to print response as markdown.
-
+- `chat_with_data`: enable vector db
+- `vector_db_path`: path to the vector store
+- `document_path`: path to the directory containing the documents
+- `embedding_model`: embedding model id or path
+- `scrap_web`: enable web scraping
 ## Logging
 
 To enable logging, launch the CLI with the `--logs` flag:
