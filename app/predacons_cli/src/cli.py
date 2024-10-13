@@ -8,8 +8,13 @@ import time
 from rich.table import Table
 from rich.markdown import Markdown
 from rich.console import Console
-from rag import VectorStore
-from rag import WebScraper
+try:
+    from .rag import VectorStore
+    from .rag import WebScraper
+except:
+    print("Importing from .rag failed trying to import from rag usually happens when running from source")
+    from rag import VectorStore
+    from rag import WebScraper
 
 
 console = Console()
@@ -121,7 +126,8 @@ class Cli:
                     # get response from vector store
                     context_text,similarity_score = vector_store.get_similar(user_input, db=vector_db, top_n=5, similarity_threshold=0.1)
                     # extract page_details from response
-                    if config.get("scrap_web", False) and similarity_score < 0.5:
+                    print("Similarity score: ", similarity_score)
+                    if config.get("scrap_web", False) and similarity_score < 0.4:
                         web_text = web_scraper.get_web_data(user_input,3)
                         PROMPT_TEMPLATE = """
                         Answer the question based only on the following context:
@@ -164,7 +170,7 @@ class Cli:
                     Answer the question based on the above context: {question}
                     """
 
-                    user_input = PROMPT_TEMPLATE.format(context=context_text, question=user_input)
+                    user_input = PROMPT_TEMPLATE.format(context=web_text, question=user_input)
                 user_body = {"role": "user", "content": user_input} 
                 chat.append(user_body)
                 response = Cli.generate_response(self, chat, model, tokenizer, config)

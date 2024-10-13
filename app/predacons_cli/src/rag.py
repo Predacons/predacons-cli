@@ -141,6 +141,7 @@ class VectorStore:
         results = db.similarity_search_with_relevance_scores(query, k=top_n)
         if len(results) == 0 or results[0][1] < similarity_threshold:
             print(f"Unable to find matching results.")
+            return "",results[0][1]
         
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         return context_text,results[0][1]
@@ -176,7 +177,8 @@ class WebScraper:
 
                     # Extract text from the website
                     text = ' '.join([p.get_text() for p in soup.find_all('p')])
-
+                    # make sure text is not too big
+                    text = text[:5000]
                     # Append the extracted text to results
                     results.append(text)
                     i = i+1
