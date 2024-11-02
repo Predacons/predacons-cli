@@ -8,6 +8,7 @@ import time
 from rich.table import Table
 from rich.markdown import Markdown
 from rich.console import Console
+from transformers import TextStreamer
 try:
     from .rag import VectorStore
     from .rag import WebScraper
@@ -177,15 +178,24 @@ class Cli:
                     user_input = PROMPT_TEMPLATE.format(context=web_text, question=user_input)
                 user_body = {"role": "user", "content": user_input} 
                 chat.append(user_body)
-                response = Cli.generate_response(self, chat, model, tokenizer, config)
+                thread,streamer = Cli.generate_response(self, chat, model, tokenizer, config)
+                thread.start()
+                try:
+                    response = ""
+                    for new_text in streamer:
+                        response = response + new_text
+                        print(new_text, end="")
+                    print("\n")
+                finally:
+                    thread.join()
                 response_body = {"role": "assistant", "content": response}
                 chat.append(response_body)
                 if config["print_as_markdown"]:
                     markdown = Markdown(response)
                     print("[orange1]Predacons: [/orange1]")
                     console.print(markdown)
-                else:
-                    console.print("[orange1]Predacons: [/orange1] [sky_blue1]" + response+"[/sky_blue1]")
+                # else:
+                #     console.print("[orange1]Predacons: [/orange1] [sky_blue1]" + response+"[/sky_blue1]")
 
     
     def load_model(self, model_path,trust_remote_code=False,use_fast_generation=False, draft_model_name=None,gguf_file=None,auto_quantize=None):
@@ -373,6 +383,19 @@ class Cli:
         return config
 
     def generate_response(self, chat, model, tokenizer, config):
+        thread,streamer = self.predacons.chat_generate(model = model,
+            sequence = chat,
+            max_length = config["max_length"],
+            tokenizer = tokenizer,
+            trust_remote_code = config["trust_remote_code"],
+            do_sample=True,   
+            temperature = config["temperature"],
+            dont_print_output = True,
+            stream = True
+            )
+        return thread,streamer
+    
+    def generate_response2(self, chat, model, tokenizer, config):
         response = self.predacons.chat_generate(model = model,
             sequence = chat,
             max_length = config["max_length"],
