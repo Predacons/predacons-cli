@@ -180,11 +180,12 @@ class Cli:
                 chat.append(user_body)
                 thread,streamer = Cli.generate_response(self, chat, model, tokenizer, config)
                 thread.start()
+                print("[orange1]Predacons: [/orange1]", end="")
                 try:
                     response = ""
                     for new_text in streamer:
                         response = response + new_text
-                        print(new_text, end="")
+                        print("[sky_blue1]"+ new_text + "[/sky_blue1]", end="")
                     print("\n")
                 finally:
                     thread.join()
