@@ -8,6 +8,7 @@ import time
 from rich.table import Table
 from rich.markdown import Markdown
 from rich.console import Console
+from transformers import TextStreamer
 try:
     from .rag import VectorStore
     from .rag import WebScraper
@@ -97,6 +98,10 @@ class Cli:
             for i in range(1, 0, -1):
                 time.sleep(1)
             os.system('clear')  # Clear the screen
+        personality = None
+        if config.get("personality", None):
+            print("[yellow]Personality detected! Loading the quirks and traits... Brace yourself![/yellow]")
+            personality = "\n Make sure to respond back as a " + config["personality"]
         
         print("[i]Welcome to the Predacons CLI![/i] [green]Model: [orange1]"+config["model_path"]+"[/orange1] loaded successfully![/green]")
         print("[yellow]You can start chatting with Predacons now.Type 'clear' to clear history, Type 'exit' to quit, Type 'help' for more options, Type 'update' to update the load documents[/yellow]")
@@ -143,7 +148,7 @@ class Cli:
 
                         Answer the question based on the above context: {question}
                         """
-
+                        PROMPT_TEMPLATE = PROMPT_TEMPLATE + personality if personality else ""
                         user_input = PROMPT_TEMPLATE.format(db_context=context_text,web_context=web_text, question=user_input)
                     
                     PROMPT_TEMPLATE = """
@@ -173,15 +178,25 @@ class Cli:
                     user_input = PROMPT_TEMPLATE.format(context=web_text, question=user_input)
                 user_body = {"role": "user", "content": user_input} 
                 chat.append(user_body)
-                response = Cli.generate_response(self, chat, model, tokenizer, config)
+                thread,streamer = Cli.generate_response(self, chat, model, tokenizer, config)
+                thread.start()
+                print("[orange1]Predacons: [/orange1]", end="")
+                try:
+                    response = ""
+                    for new_text in streamer:
+                        response = response + new_text
+                        print("[sky_blue1]"+ new_text + "[/sky_blue1]", end="")
+                    print("\n")
+                finally:
+                    thread.join()
                 response_body = {"role": "assistant", "content": response}
                 chat.append(response_body)
                 if config["print_as_markdown"]:
                     markdown = Markdown(response)
                     print("[orange1]Predacons: [/orange1]")
                     console.print(markdown)
-                else:
-                    console.print("[orange1]Predacons: [/orange1] [sky_blue1]" + response+"[/sky_blue1]")
+                # else:
+                #     console.print("[orange1]Predacons: [/orange1] [sky_blue1]" + response+"[/sky_blue1]")
 
     
     def load_model(self, model_path,trust_remote_code=False,use_fast_generation=False, draft_model_name=None,gguf_file=None,auto_quantize=None):
@@ -269,7 +284,8 @@ class Cli:
             "vector_db_path": None,
             "document_path": None,
             "embedding_model" : None,
-            "scrap_web": False
+            "scrap_web": False,
+            "personality": None
         }
 
         # If no config file is found, use the default configuration
@@ -330,6 +346,7 @@ class Cli:
         document_path = Prompt.ask("Enter the document path", default=config["document_path"])
         embedding_model = Prompt.ask("Enter the embedding model", default=config["embedding_model"])
         scrap_web = Prompt.ask("Scrap the web for data? (true/false)", default=str(config["scrap_web"]))
+        personality = Prompt.ask("Enter the personality", default=config["personality"])
 
 
         config_data = {
@@ -350,7 +367,8 @@ class Cli:
             "vector_db_path": vector_db_path if vector_db_path else None,
             "document_path": document_path if document_path else None,
             "embedding_model": embedding_model if embedding_model else None,
-            "scrap_web": scrap_web.lower() == 'true'
+            "scrap_web": scrap_web.lower() == 'true',
+            "personality": personality if personality else None
         }
         
         with open(file_path, 'w') as f:
@@ -366,6 +384,19 @@ class Cli:
         return config
 
     def generate_response(self, chat, model, tokenizer, config):
+        thread,streamer = self.predacons.chat_generate(model = model,
+            sequence = chat,
+            max_length = config["max_length"],
+            tokenizer = tokenizer,
+            trust_remote_code = config["trust_remote_code"],
+            do_sample=True,   
+            temperature = config["temperature"],
+            dont_print_output = True,
+            stream = True
+            )
+        return thread,streamer
+    
+    def generate_response2(self, chat, model, tokenizer, config):
         response = self.predacons.chat_generate(model = model,
             sequence = chat,
             max_length = config["max_length"],
@@ -377,7 +408,7 @@ class Cli:
             )
         return response
     
-# cli = Cli()
-# cli.launch()
+cli = Cli()
+cli.launch()
 
 
